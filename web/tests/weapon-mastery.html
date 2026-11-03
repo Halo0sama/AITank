@@ -1,0 +1,118 @@
+<!doctype html><meta charset="utf-8"><title>AITank · 武器策略校准</title>
+<style>body{margin:24px;background:#0b1621;color:#d8eaf1;font:14px/1.7 system-ui}main{max-width:1100px;margin:auto}button{padding:12px 18px;background:#83d5ca;color:#102e33;border:0;border-radius:8px;margin:8px 8px 8px 0;font:inherit}button:disabled{opacity:.4}pre{max-height:350px;overflow:auto;white-space:pre-wrap;background:#132331;padding:16px;border-radius:10px}iframe{width:100%;height:620px;border:1px solid #3b5668;border-radius:12px}small{color:#9fb6c4}</style>
+<main><h1>武器策略校准 · 隔离验证</h1><p>真实模型只编写特殊武器分支，普通战术源码原样保留。最多两次请求（第二次只修正验收失败）；完整物理对手，测试局不写入学习。通过全部场景后，才可另存并启用新策略；原策略保留且备份。结束自动暂停。</p><details><summary>可选：修正已审查的候选</summary><label for="seed">候选与审查反馈（JSON）</label><textarea id="seed" rows="4" style="width:100%;box-sizing:border-box"></textarea></details><button id="start">开始真实模型校准</button><button id="stop">停止并暂停 AI</button><button id="apply" disabled>另存并启用已验证策略</button><strong id="status">尚未开始 · AI 已暂停</strong><pre id="result"></pre><iframe id="game" sandbox="allow-scripts" title="隔离临时对局"></iframe></main>
+<script>
+'use strict';
+const frame=document.getElementById('game'),status=document.getElementById('status'),output=document.getElementById('result'),start=document.getElementById('start'),apply=document.getElementById('apply'),session=crypto.randomUUID();
+let finished=false,candidate=null,original=null;
+function childTest(){
+  leaveHome(false);
+ const controllers=new Set(),requests=[],checks=[];let stopped=false,running=false;
+ const nativeFetch=window.fetch.bind(window),nativeRequest=requestOptions;
+ function post(type,data={}){parent.postMessage({source:'aitank-mastery',session:TEST_SESSION,type,...data},'*')}
+ function pauseAll(){stopped=true;paused=true;streamOn=false;stopStream();suspendReview();for(const c of controllers)c.abort();resetProgram();resetPredictor();resetReflex();resetGunnery();clearInput();hud();render()}
+ function arrange(type,scenario){
+  resetProgram();resetGunnery();newRound();streamOn=false;paused=false;phase='playing';powerupsEnabled=true;weapons.nextSpawn=999;walls=[];P.x=900;P.y=350;P.a=Math.PI;E.x=150;E.y=350;E.a=0;E.hold=true;E.curAlgo=null;E.live=0;P.live=0;P2.alive=false;
+  if(scenario==='near'||scenario==='misaligned')P.x=350;
+  if(scenario==='misaligned'){E.a=Math.PI;walls=[{x:60,y:0,w:14,h:FH}]}
+  if(scenario==='return')walls=[{x:230,y:0,w:14,h:FH}];
+  if(scenario==='incoming'||scenario==='incoming_own'){P.x=900;P.y=100;bullets.push({id:++bulletSequence,kind:'normal',own:scenario==='incoming_own'?'E':'P',slot:false,x:260,y:350,vx:-128,vy:0,life:2,radius:BR})}
+  if(scenario==='corridor'){E.x=550;P.x=250;walls=[{x:0,y:270,w:FW,h:20},{x:0,y:410,w:FW,h:20}]}
+  weapons.equip(weaponWorld(),E,type);weaponCache=null;skillPlanCache=null;weaponForecastCache=null;opponentThreatCache=null;
+ }
+ const cases=[['shotgun','far'],['shotgun','return'],['shotgun','near'],['shotgun','misaligned'],['gatling','far'],['gatling','near'],['shield','far'],['shield','incoming'],['shield','incoming_own'],['mine','corridor']];
+ async function evaluatePolicy(proposal,base){
+  const merged={name:proposal.name,desc:proposal.desc,code:'if(["shotgun","gatling","shield","mine"].includes(state.self.weapon?.type)){\n'+proposal.code+'\n}\n'+(base?.code||'return {};')};
+  await installCode(merged);let runner=null;const results=[];
+  try{
+   for(const[type,scenario]of cases){
+    post('progress',{message:'本地完整机制验收：'+type+' / '+scenario});
+    arrange(type,scenario);runner=new AIProgramSandbox();await runner.load(merged.code);const snapshot=programSnapshot(),first=await runner.tick(snapshot),advice=skillOpportunity();
+    E.curAlgo=merged.name;E.hold=false;const before=E.weapon.ammo;
+    // Compile before advancing accelerated game time; iframe startup is not AI reaction time.
+    programState={name:merged.name,source:merged.code,runner,loaded:true,busy:false,lastInput:gT,value:{...first,time:gT,weaponType:E.weapon?.type||null,projectileId:E.weapon?.projectileId||null,targetId:enemyTank().id}};
+    for(let i=0;i<350&&phase==='playing'&&!stopped;i++){
+     // Human opponent uses the same movement, weapons, ammo and collisions.
+     if(scenario==='near'&&type!=='gatling')scriptedOpponent(.01);
+     advance(.01);if(i%5===0)await sleep(0);
+    }
+    const shots=roundExecution.weapons?.decisions||[],relevant=shots.filter(d=>d.weapon===type),active=E.shieldUntil>gT,placed=weapons.mines.filter(m=>m.own==='E').length;
+    const duplicateMines=weapons.mines.some((m,i,list)=>m.own==='E'&&list.slice(i+1).some(n=>n.own==='E'&&Math.hypot(m.x-n.x,m.y-n.y)<40));
+    const outside=['far','return'].includes(scenario)&&['shotgun','gatling'].includes(type),unsafe=relevant.some(d=>d.selfHit||d.distance>d.range+2*TR+6);
+    const ok=outside?first.fire!==true&&!unsafe:scenario==='far'&&type==='shield'?!active&&E.weapon?.type==='shield':type==='shield'?active&&first.fire===true:type==='mine'?placed>0&&!duplicateMines:relevant.length>0&&!unsafe;
+    results.push({weapon:type,scenario,ok,first,advice,shots:relevant,remaining:E.weapon?.ammo??null,before,active,placed,duplicateMines,alive:E.alive,position:{x:E.x,y:E.y}});
+   }
+  }finally{runner?.stop()}
+  return{merged,results};
+ }
+ addEventListener('message',async event=>{
+  if(event.source!==parent||event.data?.session!==TEST_SESSION)return;
+  if(event.data.action==='stop'){pauseAll();post('done',{requests,checks,paused:true,stopped:true});return}
+  if(event.data.action!=='run'||running)return;running=true;
+  try{
+   cfg={...event.data.config,remember:false};setDifficulty('expert');setGameMode('solo');streamOn=false;doReflect=()=>Promise.resolve();
+   const observations=[];for(const[type,scenario]of cases){arrange(type,scenario);observations.push({weapon:type,scenario,state:programSnapshot()})}
+   const system=SYS_REF+'\n完整武器规则：'+JSON.stringify(weapons.rulebook(weaponWorld()))+'\n本次只输出JSON {set_code:{name:"weapon_mastery_v'+event.data.generation+'",desc:"武器机制校准",code:"同步JS函数体"}}。只编写self.weapon存在时的特殊武器决策分支，非武器分支将由调用者原样接回旧源码。不得复制旧源码，不改其他六种武器和预测器/避弹/火控，不设强制留弹或额外射击间隔。本次仅编写shotgun/gatling/shield/mine，其他武器分支原样沿用旧源码，不要改写。可用当前gunnery.current、weaponAim、api.shot、来弹和部署建议；这些是建议，你可另选。霰弹远处接近/换位，不可照普通炮远射或让其余弹丸回弹自伤。开火依据必须是当前朝向cur.hit/selfHit或api.shot(s.a,point)，不能用eng目标角的命中当成本帧可射；out.turn受ROT限速，转向与fire同帧输出不会立刻对准。misaligned场景坦克背向目标、身后有墙，要求先转向或走位，再安全发射。换位方向用memory保持连续，避免每tick把flank符号反转造成颤抖。加特林可连续fire:true跨过.65s蓄转，并可自行选择点射/释放。护盾无威胁可保存，有真实逼近弹择机启用。本次incoming/incoming_own场景已处于明确护盾防御窗口，验收要求首个输出fire:true并实际展开；cur.incomingEta来自完整本地弹道，包含自己反弹回来的子弹，不可按own排除自身来弹。若自己写直线时间，令r=子弹位置-自身位置，t=-dot(r,v)/dot(v,v)，不要把符号写反。地雷用placementOptions选关键位置/朝向并在实际抵达后再fire。mine在身后tankRadius+14；placementOptions中的x/y是计划地雷坐标，tank.x/tank.y才是车体应抵达坐标，不能把两者混用；导航到达容差是12px，可检查self.goal.status或距离<=12，不能要求更小距离而仍用moveTo导致到达后死等；用turn对齐angle后才fire。moveTo只移动，turn只目标绝对角。地雷目标须记在memory中到达后再放，只有self.weapon.ammo实际减少才能确认已放置并改选下一位置，返回fire:true不代表冷却内已经放成功；确认减弹后清空旧落点并重新比较，不能将三枚叠在同一位置重复覆盖，本次验收会核对此项。避免每帧换点。返回fire:false可等待，不能通过修改物理完成验收。不要机械继承旧教训的move必须1、留2弹等硬规则。';
+   let previous=null,validated=null;
+   if(event.data.seed?.proposal?.code){
+    const prefix='if(["shotgun","gatling","shield","mine"].includes(state.self.weapon?.type)){\n',suffix='}\n'+(event.data.base?.code||'return {};');
+    const code=event.data.seed.proposal.code;
+    if(!code.startsWith(prefix)||!code.endsWith(suffix))throw Error('候选与当前原策略不匹配，未修改学习');
+    previous={proposal:{...event.data.seed.proposal,code:code.slice(prefix.length,-suffix.length)},failures:event.data.seed.audit};
+   }
+   for(let attempt=0;attempt<2&&!stopped;attempt++){
+    const controller=new AbortController();controllers.add(controller);const timer=setTimeout(()=>controller.abort(),60000);
+    try{
+     post('progress',{message:'真实模型编写武器策略 '+(attempt+1)+' / 2'});
+     const prompt=attempt===0&&!previous?'真实用户当前策略只用朝向和普通ammo决定特殊武器开火，存在远处霰弹发射后自杀的战报。普通源码保留：'+JSON.stringify(event.data.base)+'\n受控场景快照（不能当作真人胜率）：'+JSON.stringify(observations.map(o=>({weapon:o.weapon,scenario:o.scenario,self:o.state.self,enemy:o.state.enemy,gunnery:o.state.gunnery,threat:o.state.threat,advice:o.state.advice,constants:o.state.constants}))) :'上一次特殊分支和实际验收失败，请修正失败机制，保留其他已通过行为：'+JSON.stringify(previous);
+     const options=nativeRequest(system,prompt,false,controller.signal),body=JSON.parse(options.body);body.max_tokens=3400;options.body=JSON.stringify(body);
+     const record={number:requests.length+1,thinking:body.thinking?.type,status:null,usage:{}};requests.push(record);
+     const response=await nativeFetch(cfg.endpoint,options);record.status=response.status;if(!response.ok)throw Error('HTTP '+response.status);const data=await response.json();record.usage=data.usage||{};
+     const raw=(data.content||[]).filter(c=>c.type==='text').map(c=>c.text).join(''),values=[];AITankAI.jsonObjects(v=>values.push(v)).push(raw);const proposal=values.find(v=>v.set_code)?.set_code;if(!proposal)throw Error('模型未返回完整策略');
+     proposal.name='weapon_mastery_v'+event.data.generation;
+     const result=await evaluatePolicy(proposal,event.data.base);checks.push({attempt:attempt+1,results:result.results});
+     if(result.results.every(r=>r.ok)){validated=result;break}
+     previous={proposal,failures:result.results.filter(r=>!r.ok)};
+    }finally{clearTimeout(timer);controllers.delete(controller)}
+   }
+   pauseAll();post('done',{requests,checks,paused:true,passed:!!validated,proposal:validated?.merged||null,backgroundRequestsAllowed:!!canControl()});
+  }catch(error){pauseAll();post('done',{requests,checks,paused:true,error:String(error.message),backgroundRequestsAllowed:!!canControl()})}
+  finally{cfg.key='';event.data.config.key='';running=false}
+ });
+ paused=true;streamOn=false;stopStream();post('ready');
+}
+const boot=(async()=>{
+ const r=await fetch('../index.html');let html=await r.text();const scripts=[...html.matchAll(/<script src="([^"]+)"><\/script>/g)];
+ const sources=await Promise.all(scripts.map(async m=>{const r=await fetch(new URL(m[1],location.origin+'/'));if(!r.ok)throw Error('模块加载失败');return r.text()}));
+ for(let i=0;i<scripts.length;i++)html=html.replace(scripts[i][0],()=>'<script>'+sources[i].replace(/<\/script/gi,'<\\/script')+'<\/script>');
+ const bootstrap='<base href="'+location.origin+'/"><script>window.requestAnimationFrame=()=>0;const TEST_SESSION='+JSON.stringify(session)+';<\/script>';
+ const opponent=await(await fetch('scripted-opponent.js')).text();frame.srcdoc=html.replace('<head>','<head>'+bootstrap)+'<script>'+opponent+'<\/script>'+'<script>('+childTest.toString()+')();<\/script>';
+})();
+start.onclick=async()=>{
+ if(finished)return;start.disabled=true;await boot;let config,algos,evolution;
+ try{config=JSON.parse(localStorage.getItem('aitank_lessons')||'{}').cfg;algos=JSON.parse(localStorage.getItem('aitank_algos')||'{}');evolution=JSON.parse(localStorage.getItem('aitank_evolution')||'{}')}catch{}
+ if(!config?.key){status.textContent='未保存 API Key，未发起请求';start.disabled=false;return}
+ original={algos:localStorage.getItem('aitank_algos'),evolution:localStorage.getItem('aitank_evolution')};
+ let seed=null;try{const raw=document.getElementById('seed').value.trim();if(raw)seed=JSON.parse(raw)}catch{status.textContent='审查反馈JSON无效，未发起请求';start.disabled=false;return}
+ const message={session,action:'run',config,seed,base:algos[evolution.activePolicy]||null,generation:(evolution.generation||0)+1};
+ const send=()=>frame.contentWindow.postMessage(message,'*');if(frame.dataset.ready)send();else frame.addEventListener('test-ready',send,{once:true});
+};
+document.getElementById('stop').onclick=()=>frame.contentWindow.postMessage({session,action:'stop'},'*');
+apply.onclick=()=>{
+ if(!candidate||!original)return;
+ if(localStorage.getItem('aitank_algos')!==original.algos||localStorage.getItem('aitank_evolution')!==original.evolution){status.textContent='原档案已变化，未应用；请重新校准以保留最新学习';return}
+ const algos=JSON.parse(original.algos||'{}'),evolution=JSON.parse(original.evolution||'{}');if(algos[candidate.name]){status.textContent='同名策略已存在，未覆盖';return}
+ try{
+  localStorage.setItem('aitank_weapon_backup_'+Date.now(),JSON.stringify(original));
+  algos[candidate.name]={desc:candidate.desc,code:candidate.code,weaponInterface:3};evolution.activePolicy=candidate.name;evolution.generation=(evolution.generation||0)+1;
+  localStorage.setItem('aitank_algos',JSON.stringify(algos));localStorage.setItem('aitank_evolution',JSON.stringify(evolution));
+  apply.disabled=true;status.textContent='已另存并启用 '+candidate.name+' · 原策略和其他学习保留 · AI 已暂停';
+ }catch{for(const key of ['algos','evolution']){const name='aitank_'+key;if(original[key]===null)localStorage.removeItem(name);else localStorage.setItem(name,original[key])}status.textContent='保存失败，已还原原档案'}
+};
+addEventListener('message',event=>{
+ if(event.source!==frame.contentWindow||event.data?.source!=='aitank-mastery'||event.data.session!==session)return;
+ const d=event.data;if(d.type==='ready'){frame.dataset.ready='true';frame.dispatchEvent(new Event('test-ready'));return}
+ if(d.type==='progress'){status.textContent=d.message;return}
+ finished=true;candidate=d.passed?d.proposal:null;apply.disabled=!candidate;status.textContent=d.passed?'全部机制验收通过 · AI 已暂停':'验收未全部通过 · AI 已暂停';output.textContent=JSON.stringify(d,null,2);
+});
+</script>

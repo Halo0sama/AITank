@@ -1,0 +1,86 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; worker-src blob:; connect-src 'none'; img-src 'none'; base-uri 'none'; form-action 'none'">
+<script>
+// The iframe has an opaque origin. Generated code only runs in its disposable Worker.
+"use strict";
+let worker=null,deadline=null,session=null;
+const reply=value=>parent.postMessage({...value,session},"*");
+function workerMain(){
+  "use strict";
+  const send=self.postMessage.bind(self);
+  for(const name of ['fetch','XMLHttpRequest','WebSocket','EventSource','Worker','SharedWorker','importScripts']) {
+    Object.defineProperty(self,name,{value:undefined,writable:false,configurable:false});
+  }
+  let program=null,memory={},physics=null,simulator=null;
+  self.onmessage=event=>{
+    const message=event.data;
+    try{
+      if(message.type==="compile"){
+        physics=new Function("return "+message.library)();simulator=physics.create();
+        program=new Function("state","memory","api",'"use strict";\n'+message.code);
+        send({type:"compiled",id:message.id});return;
+      }
+      const state=message.state;
+      const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+      const angleDiff=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
+      const blocked=(x,y,r=state.constants.tankRadius)=>x<r||y<r||x>state.width-r||y>state.height-r||state.walls.some(w=>x+r>w.x&&x-r<w.x+w.w&&y+r>w.y&&y-r<w.y+w.h);
+      const predictEnemy=(seconds,model="linear")=>{
+        const dt=.025,n=Math.ceil(clamp(seconds,0,4)/dt),enemy=state.enemy;
+        let x=enemy.x,y=enemy.y,angle=Math.atan2(enemy.vy,enemy.vx);
+        const speed=Math.hypot(enemy.vx,enemy.vy),omega=model==="turn"?enemy.angularVelocity:0;
+        for(let i=0;i<n;i++){
+          angle+=omega*dt;
+          const nx=x+Math.cos(angle)*speed*dt,ny=y+Math.sin(angle)*speed*dt;
+          if(!blocked(nx,y))x=nx;if(!blocked(x,ny))y=ny;
+        }
+        return{x,y};
+      };
+      const shot=(angle,point=state.enemy,source=state.self)=>{
+        for(const rule of state.weapons?.definitions||[])if(!physics.definition(rule.id)&&rule.projectile){
+          physics.register({id:rule.id,name:rule.name||rule.id,icon:'*',color:'#aabbcc',ammo:rule.ammo||1,cooldown:rule.cooldown||.4,projectile:rule.projectile});
+        }
+        const own=source.id===state.self.id,status=state.weapons?.tanks?.find(t=>t.id===source.id);
+        source={...source,remoteId:status?.remoteId||source.remoteId};
+        const tanks=[state.self,...(state.enemies||[state.enemy])].map(t=>({...t,...(t.id===source.id?source:{}),alive:t.alive!==false}));
+        const world={time:state.time,width:state.width,height:state.height,walls:state.walls,constants:state.constants,tanks,bullets:state.bullets,held:()=>false};
+        return simulator.preview(world,source,angle,{...(own?state.enemy:state.self),...point});
+      };
+      const willHit=(angle,point=state.enemy)=>shot(angle,point).hit;
+      const incomingRisk=(point=state.self,from=0,to=1.5)=>{const age=Math.max(0,state.time-(state.opponentThreats?.time??state.time));return physics.incomingRisk(state.opponentThreats,point,from+age,to+age)};
+      const opponentShot=(id,angle,point=state.self)=>{
+        const actor=(state.enemies||[state.enemy]).find(t=>t.id===id);if(!actor)throw new Error('未知玩家ID');
+        const a=angle??actor.a;if(!Number.isFinite(a)||!Number.isFinite(point.x)||!Number.isFinite(point.y))throw new Error('无效攻击假设');
+        const status=state.weapons?.tanks?.find(t=>t.id===id),controlled=!!(actor.weapon?.projectileId||status?.remoteId),available=actor.alive!==false&&(controlled||(actor.weapon?actor.weapon.ammo>0:actor.ammo>0));
+        const readyIn=controlled?0:Math.max(actor.cooldown||0,status?.lockRemaining||0,Math.abs(angleDiff(a,actor.a))/(actor.motion?.rotationSpeed||state.constants.rotationSpeed)),windup=actor.weapon?.type==='deathray'?.6:actor.weapon?.type==='gatling'?(status?.spinupRemaining??.65):0;
+        const ray=available?shot(a,point,actor):{hit:false};
+        return{...ray,available,readyIn,windup,etaFromNow:ray.eta==null?null:readyIn+ray.eta+(actor.weapon?.type==='gatling'?windup:0),hypothetical:true};
+      };
+      const result=program(state,memory,Object.freeze({clamp,angleDiff,isBlocked:blocked,predictEnemy,willHit,shot,incomingRisk,opponentShot,weaponAim:()=>state.gunnery?.current?.aim||null}));
+      if(!result||typeof result!=="object"||Array.isArray(result)||typeof result.then==="function")throw new Error("代码算法必须同步返回对象");
+      if(result.memory!==undefined){
+        const encoded=JSON.stringify(result.memory);if(encoded.length>8192)throw new Error("算法记忆过大");
+        memory=JSON.parse(encoded);
+      }
+      send({type:"result",id:message.id,value:{move:result.move,turn:result.turn,fire:result.fire,prediction:result.prediction,pickupId:result.pickupId,moveTo:result.moveTo}});
+    }catch(error){send({type:"error",id:message.id,error:String(error.message||error).slice(0,200)})}
+  };
+}
+addEventListener("message",event=>{
+  if(event.source!==parent)return;
+  const message=event.data;
+  if(message.type==="init"){
+    session=message.session;
+    if(worker)worker.terminate();
+    const url=URL.createObjectURL(new Blob(["("+workerMain.toString()+")()"],{type:"text/javascript"}));
+    worker=new Worker(url);URL.revokeObjectURL(url);
+    worker.onmessage=event=>{clearTimeout(deadline);reply(event.data)};
+    worker.onerror=()=>{clearTimeout(deadline);reply({type:"error",id:message.id,error:"算法运行失败"});worker.terminate()};
+    worker.postMessage({type:"compile",code:message.code,library:message.library,id:message.id});
+    deadline=setTimeout(()=>{worker.terminate();reply({type:"error",id:message.id,error:"算法编译超时"})},800);
+  }else if(message.type==="tick"&&message.session===session&&worker){
+    worker.postMessage(message);
+    deadline=setTimeout(()=>{worker.terminate();reply({type:"error",id:message.id,error:"算法运行超时，已停止"})},40);
+  }
+});
+</script>

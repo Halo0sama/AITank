@@ -1,0 +1,99 @@
+<!doctype html><meta charset="utf-8"><title>AITank · 技能机制隔离验证</title>
+<style>body{margin:24px;background:#0b1621;color:#d8eaf1;font:14px/1.8 system-ui}main{max-width:1050px;margin:auto}button{padding:12px 18px;background:#83d5ca;color:#102e33;border:0;border-radius:8px;margin:10px 8px 10px 0;font:inherit}button:disabled{opacity:.4}pre{max-height:240px;overflow:auto;white-space:pre-wrap;background:#132331;border-radius:10px;padding:18px}iframe{width:100%;height:560px;border:1px solid #3b5668;border-radius:12px}small{color:#8fa9bc}</style>
+<main><h1>真实 AI · 技能验证</h1><p>最多 4 次请求：3 次技能场景指挥、1 次算法生成。对手为完整机制程序；测试仅验证受控场景，不代表真人胜率。使用当前浏览器已保存的游戏接口；测试对局无法访问学习存档，结束自动暂停。</p><button id="start">开始真实 API 测试</button><button id="stop">停止并暂停 AI</button><strong id="status">尚未开始 · AI 已暂停</strong><pre id="result">测试结果将在这里显示；不会显示或导出 API Key。</pre><iframe id="game" sandbox="allow-scripts" title="隔离临时对局"></iframe></main>
+<script>
+const frame=document.getElementById('game'),status=document.getElementById('status'),output=document.getElementById('result'),start=document.getElementById('start'),session=crypto.randomUUID();
+let finished=false;
+function childTest(){
+  leaveHome(false);
+  const apiControllers=new Set(),requests=[],checks=[],budget=4;let running=false,stopped=false;
+  const nativeFetch=window.fetch.bind(window),nativeRequest=requestOptions;
+  function post(type,data={}){parent.postMessage({source:'aitank-live-test',session:TEST_SESSION,type,...data},'*')}
+  function pauseAll(){stopped=true;paused=true;streamOn=false;stopStream();suspendReview();for(const c of apiControllers)c.abort();resetProgram();resetPredictor();resetReflex();resetGunnery();brainEl.textContent='技能验证结束 · AI 已暂停';document.getElementById('pauseBtn').textContent='▶ 继续';hud();render()}
+  window.fetch=async(url,options)=>{
+    if(url!==cfg.endpoint)return nativeFetch(url,options);
+    if(stopped||requests.length>=budget)throw new Error('测试已暂停或到达请求上限');
+    const body=JSON.parse(options.body),record={number:requests.length+1,kind:body.stream?'commander':'coach',thinking:body.thinking?.type,status:null,usage:{}};requests.push(record);post('progress',{message:'真实模型请求 '+requests.length+' / '+budget});
+    const response=await nativeFetch(url,options);record.status=response.status;
+    if(!body.stream)void response.clone().json().then(data=>{record.usage=data.usage||{}}).catch(()=>{});return response;
+  };
+  function arrange(type){
+    newRound();walls=[];weapons.nextSpawn=999;P.x=type==='gatling'?900:650;P.y=350;P.a=Math.PI;E.x=150;E.y=350;E.a=0;E.hold=true;streamOn=false;paused=false;
+    if(type!=='gatling')walls=[{x:400,y:180,w:12,h:350}];powerupsEnabled=true;weapons.equip(weaponWorld(),E,type);
+  }
+  async function command(){
+    const c=new AbortController();apiControllers.add(c);const timeout=setTimeout(()=>c.abort(),20000),accepted=[];let raw='';
+    try{
+      const options=nativeRequest(controlPrompt(),stateText()+'\n'+asciiMap()+'\n这是隔离测试，玩家由保留完整移动、武器、拾取、弹药和伤害机制的程序驾驶。请按当前战局自由选择下一步指令。',true,c.signal),body=JSON.parse(options.body);body.max_tokens=320;options.body=JSON.stringify(body);
+      const response=await fetch(cfg.endpoint,options);if(!response.ok)throw new Error('HTTP '+response.status);
+      const parser=AITankAI.sseText(text=>{raw+=text}),reader=response.body.getReader(),decoder=new TextDecoder();let wire='';
+      while(true){const part=await reader.read();if(part.done)break;const text=decoder.decode(part.value,{stream:true});wire+=text;parser.push(text)}parser.push(decoder.decode());parser.finish();
+      for(const line of wire.split(/\r?\n/)){if(!line.startsWith('data:'))continue;try{const e=JSON.parse(line.slice(5));Object.assign(requests.at(-1).usage,e.message?.usage||{},e.usage||{})}catch{}}
+      AITankAI.jsonObjects(value=>{if(applyTacticalDecision(value))accepted.push(value)}).push(raw);return accepted;
+    }finally{clearTimeout(timeout);apiControllers.delete(c)}
+  }
+  addEventListener('message',async event=>{
+    if(event.source!==parent||event.data?.session!==TEST_SESSION)return;
+    if(event.data.action==='stop'){pauseAll();post('stopped',{requests,checks,paused:true});return}
+    if(event.data.action!=='run'||running)return;running=true;
+    try{
+      cfg={...event.data.config,remember:false};setDifficulty('expert');setGameMode('solo');streamOn=false;
+      // Keep controlled evidence out of real learning and prevent automatic API calls.
+      doReflect=()=>Promise.resolve();
+      for(const type of ['gatling','deathray','laser']){
+        if(stopped)break;arrange(type);const initial=skillOpportunity(),commands=await command();let frames=0;
+        for(let i=0;i<400&&phase==='playing'&&!stopped;i++){
+          scriptedOpponent(.01);advance(.01);frames++;if(i%10===0)await sleep(0);
+        }
+        const decisions=roundExecution.weapons?.decisions||[],shots=decisions.filter(d=>d.weapon===type),misspent=shots.filter(d=>d.hit===false&&d.range&&d.distance>d.range+2*TR);
+        const ok=commands.length>0&&(type==='gatling'?misspent.length===0:shots.length>0&&shots.some(d=>d.hit===true));
+        checks.push({weapon:type,ok,commands,seconds:frames*.01,initial,shots,misspent:misspent.length,alive:{ai:E.alive,opponent:P.alive},opponent:'完整机制程序驾驶'});
+      }
+      if(!stopped){
+        const c=new AbortController();apiControllers.add(c);const timeout=setTimeout(()=>c.abort(),30000);
+        try{
+          const system=SYS_REF+'\n完整本作武器规则：'+JSON.stringify(weapons.rulebook(weaponWorld()))+'\n本次只生成 set_code，名称 weapon_mechanism_policy。使用 state.weapons/state.self.weapon 与 api.shot/api.weaponAim 等信息，让本地代码区分全部武器、部署/引爆/蓄转和普通槽位；能瞄准及移动，也可选择等待，不设固定留弹数或额外禁射间隔。不要修改其他程序，不要声称胜率提高。';
+          const options=nativeRequest(system,'人工布置的三类技能接口验收，不能当作真人胜率证据：'+JSON.stringify(checks),false,c.signal),body=JSON.parse(options.body);body.max_tokens=2400;options.body=JSON.stringify(body);
+          const response=await fetch(cfg.endpoint,options);if(!response.ok)throw new Error('HTTP '+response.status);const data=await response.json();requests.at(-1).usage=data.usage||{};
+          const raw=(data.content||[]).filter(v=>v.type==='text').map(v=>v.text).join(''),outputs=[];AITankAI.jsonObjects(value=>outputs.push(value)).push(raw);const proposal=outputs.find(v=>v.set_code)?.set_code;
+          if(!proposal)throw new Error('教练未提供可执行策略');await installCode(proposal);
+          const runner=new AIProgramSandbox(),evaluations=[];
+          try{
+            await runner.load(proposal.code);
+            for(const type of Object.keys(AITankWeapons.catalog)){
+              arrange(type);const result=await runner.tick(programSnapshot());evaluations.push({weapon:type,...result});
+            }
+          }finally{runner.stop()}
+          checks.push({name:'真实教练编写技能策略并通过全部十种道具的隔离运行',ok:evaluations.length===10,program:proposal.name,code:proposal.code,evaluations});
+        }finally{clearTimeout(timeout);apiControllers.delete(c)}
+      }
+      pauseAll();post('done',{requests,checks,paused:true,backgroundRequestsAllowed:!!canControl()});
+    }catch(error){pauseAll();post('done',{requests,checks,paused:true,error:String(error.message),backgroundRequestsAllowed:!!canControl()})}
+    finally{cfg.key='';event.data.config.key='';running=false}
+  });
+  paused=true;streamOn=false;stopStream();post('ready');
+}
+const boot=(async()=>{
+  const response=await fetch('../index.html');let html=await response.text();
+  const scripts=[...html.matchAll(/<script src="([^"]+)"><\/script>/g)];
+  const sources=await Promise.all(scripts.map(async m=>{const r=await fetch(new URL(m[1],location.origin+'/'));if(!r.ok)throw new Error('本地模块加载失败');return await r.text()}));
+  for(let i=0;i<scripts.length;i++)html=html.replace(scripts[i][0],()=>'<script>'+sources[i].replace(/<\/script/gi,'<\\/script')+'<\/script>');
+  const bootstrap='<base href="'+location.origin+'/"><script>window.requestAnimationFrame=()=>0;const TEST_SESSION='+JSON.stringify(session)+';<\/script>';
+  const opponent=await(await fetch('scripted-opponent.js')).text();
+  frame.srcdoc=html.replace('<head>','<head>'+bootstrap)+'<script>'+opponent+'<\/script>'+'<script>('+childTest.toString()+')();<\/script>';
+})();
+start.onclick=async()=>{
+  if(finished)return;start.disabled=true;status.textContent='初始化临时对局…';await boot;
+  let config;try{config=JSON.parse(localStorage.getItem('aitank_lessons')||'{}').cfg}catch{}
+  if(!config?.key){status.textContent='当前浏览器没有已保存的 API Key；未发起付费请求';start.disabled=false;return}
+  const send=()=>frame.contentWindow.postMessage({session,action:'run',config},'*');
+  if(frame.dataset.ready)send();else frame.addEventListener('test-ready',send,{once:true});
+};
+document.getElementById('stop').onclick=()=>{frame.contentWindow.postMessage({session,action:'stop'},'*');status.textContent='停止中…'};
+addEventListener('message',event=>{
+  if(event.source!==frame.contentWindow||event.data?.source!=='aitank-live-test'||event.data.session!==session)return;
+  const data=event.data;if(data.type==='ready'){frame.dataset.ready='true';frame.dispatchEvent(new Event('test-ready'));return}
+  if(data.type==='progress'){status.textContent=data.message;return}
+  finished=true;status.textContent=data.paused?'测试结束 · AI 已暂停':'测试状态异常';output.textContent=JSON.stringify(data,null,2);
+});
+</script>

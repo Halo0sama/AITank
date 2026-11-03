@@ -1,0 +1,358 @@
+[
+  {
+    "id": "cannon-1",
+    "source": "fs:506546",
+    "take": 0.1,
+    "duration": 0.125,
+    "rate": 0.8,
+    "filters": [
+      "highpass=f=180",
+      "lowpass=f=4200"
+    ]
+  },
+  {
+    "id": "cannon-2",
+    "source": "fs:506545",
+    "take": 0.07,
+    "duration": 0.115,
+    "rate": 0.8,
+    "filters": [
+      "highpass=f=200",
+      "lowpass=f=4500"
+    ]
+  },
+  {
+    "id": "double",
+    "duration": 0.11,
+    "layers": [
+      {
+        "source": "fs:506545",
+        "take": 0.07,
+        "rate": 1.05
+      },
+      {
+        "source": "fs:414888",
+        "take": 0.11,
+        "rate": 1.4,
+        "gain": 0.12,
+        "filters": [
+          "lowpass=f=4500"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "shotgun",
+    "duration": 0.21,
+    "layers": [
+      {
+        "source": "fs:506546",
+        "take": 0.1,
+        "rate": 0.72,
+        "gain": 0.7,
+        "filters": [
+          "highpass=f=180"
+        ]
+      },
+      {
+        "source": "fs:506545",
+        "take": 0.07,
+        "rate": 1.1,
+        "gain": 0.4
+      },
+      {
+        "source": "fs:414888",
+        "take": 0.11,
+        "rate": 0.65,
+        "gain": 0.12,
+        "filters": [
+          "lowpass=f=4000"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "gatling",
+    "source": "fs:506545",
+    "take": 0.07,
+    "duration": 0.065,
+    "rate": 1.4,
+    "filters": [
+      "highpass=f=350",
+      "lowpass=f=4500"
+    ]
+  },
+  {
+    "id": "laser",
+    "source": "fs:414888",
+    "take": 0.12,
+    "duration": 0.13,
+    "filters": [
+      "highpass=f=300",
+      "lowpass=f=5500"
+    ]
+  },
+  {
+    "id": "homing",
+    "source": "fs:413057",
+    "take": 0.36,
+    "duration": 0.24,
+    "rate": 1.5,
+    "filters": [
+      "highpass=f=220",
+      "lowpass=f=5000"
+    ]
+  },
+  {
+    "id": "remote",
+    "source": "fs:413057",
+    "take": 0.33,
+    "duration": 0.29,
+    "rate": 1.2,
+    "reverse": true,
+    "filters": [
+      "highpass=f=220",
+      "lowpass=f=4500"
+    ]
+  },
+  {
+    "id": "frag",
+    "duration": 0.18,
+    "layers": [
+      {
+        "source": "fs:506546",
+        "take": 0.1,
+        "rate": 0.85,
+        "gain": 0.8
+      },
+      {
+        "source": "fs:253168",
+        "take": 0.15,
+        "rate": 1.1,
+        "gain": 0.3
+      }
+    ]
+  },
+  {
+    "id": "mine",
+    "source": "fs:253168",
+    "take": 0.15,
+    "duration": 0.17,
+    "rate": 0.85,
+    "filters": [
+      "highpass=f=300",
+      "lowpass=f=3500"
+    ]
+  },
+  {
+    "id": "deathray",
+    "duration": 0.46,
+    "layers": [
+      {
+        "source": "fs:413057",
+        "take": 0.36,
+        "rate": 0.9,
+        "gain": 0.65,
+        "filters": [
+          "highpass=f=250",
+          "lowpass=f=4800"
+        ]
+      },
+      {
+        "source": "fs:483883",
+        "take": 0.47,
+        "rate": 1.2,
+        "reverse": true,
+        "gain": 0.3,
+        "filters": [
+          "highpass=f=300",
+          "lowpass=f=4800"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "charge",
+    "source": "fs:483883",
+    "take": 0.47,
+    "duration": 0.56,
+    "rate": 0.9,
+    "filters": [
+      "highpass=f=300",
+      "lowpass=f=4800"
+    ]
+  },
+  {
+    "id": "shield",
+    "source": "fs:584173",
+    "take": 0.46,
+    "duration": 0.36,
+    "start": 0.02,
+    "rate": 1.3,
+    "filters": [
+      "highpass=f=250",
+      "lowpass=f=6000"
+    ]
+  },
+  {
+    "id": "deflect",
+    "duration": 0.14,
+    "layers": [
+      {
+        "source": "fs:414888",
+        "take": 0.11,
+        "rate": 1.8,
+        "gain": 0.6,
+        "filters": [
+          "lowpass=f=5500"
+        ]
+      },
+      {
+        "source": "fs:392975",
+        "take": 0.16,
+        "rate": 1.35,
+        "gain": 0.13,
+        "filters": [
+          "highpass=f=600",
+          "lowpass=f=5000"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "shield-off",
+    "source": "fs:584173",
+    "take": 0.35,
+    "duration": 0.25,
+    "start": 0.05,
+    "rate": 1.5,
+    "reverse": true,
+    "filters": [
+      "highpass=f=300",
+      "lowpass=f=3400"
+    ]
+  },
+  {
+    "id": "ricochet-1",
+    "source": "fs:392975",
+    "take": 0.21,
+    "duration": 0.15,
+    "rate": 1.4,
+    "filters": [
+      "highpass=f=650",
+      "lowpass=f=5800"
+    ]
+  },
+  {
+    "id": "ricochet-2",
+    "source": "fs:392975",
+    "take": 0.25,
+    "duration": 0.16,
+    "start": 0.03,
+    "rate": 1.6,
+    "filters": [
+      "highpass=f=700",
+      "lowpass=f=5400"
+    ]
+  },
+  {
+    "id": "explosion-1",
+    "source": "fs:441497",
+    "take": 0.6,
+    "duration": 0.4,
+    "rate": 1.3,
+    "filters": [
+      "highpass=f=220",
+      "lowpass=f=4500"
+    ]
+  },
+  {
+    "id": "explosion-2",
+    "source": "fs:459150",
+    "take": 0.5,
+    "duration": 0.36,
+    "rate": 1.2,
+    "filters": [
+      "highpass=f=240",
+      "lowpass=f=4200"
+    ]
+  },
+  {
+    "id": "pickup",
+    "source": "fs:220173",
+    "take": 0.5,
+    "duration": 0.31,
+    "rate": 1.5,
+    "filters": [
+      "highpass=f=350",
+      "lowpass=f=6500"
+    ]
+  },
+  {
+    "id": "mine-trigger",
+    "source": "fs:478191",
+    "take": 0.19,
+    "duration": 0.16,
+    "rate": 1.25,
+    "filters": [
+      "highpass=f=500",
+      "lowpass=f=5000"
+    ]
+  },
+  {
+    "id": "ui-click",
+    "source": "fs:253168",
+    "take": 0.15,
+    "duration": 0.1,
+    "rate": 1.3,
+    "filters": [
+      "lowpass=f=4500"
+    ]
+  },
+  {
+    "id": "round-start",
+    "source": "fs:657945",
+    "take": 0.4,
+    "duration": 0.29,
+    "rate": 1.3,
+    "filters": [
+      "highpass=f=350",
+      "lowpass=f=6000"
+    ]
+  },
+  {
+    "id": "victory",
+    "source": "fs:368651",
+    "take": 0.8,
+    "duration": 0.55,
+    "rate": 1.5,
+    "filters": [
+      "highpass=f=250",
+      "lowpass=f=6000"
+    ]
+  },
+  {
+    "id": "defeat",
+    "source": "fs:368651",
+    "take": 0.6,
+    "duration": 0.5,
+    "reverse": true,
+    "rate": 1.1,
+    "filters": [
+      "highpass=f=200",
+      "lowpass=f=3200"
+    ]
+  },
+  {
+    "id": "tread-loop",
+    "source": "fs:729437",
+    "take": 1.2,
+    "duration": 1.05,
+    "rate": 1.05,
+    "loop": true,
+    "filters": [
+      "highpass=f=350",
+      "lowpass=f=2200"
+    ]
+  }
+]

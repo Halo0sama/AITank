@@ -14,3 +14,19 @@ captures/
 
 # macOS
 .DS_Store
+
+# Web development / playtest outputs
+node_modules/
+web/test-results/
+
+# Local archives, credentials, review notes and generated release bundles
+web/REVIEW.md
+aitank-learning*.json
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+__pycache__/
+*.pyc
+dist/

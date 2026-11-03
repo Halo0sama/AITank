@@ -1,0 +1,353 @@
+{
+  "version": 2,
+  "style": "soft-arcade",
+  "format": "MP3 44.1 kHz mono / 96 kbps",
+  "license": "CC0-1.0",
+  "build": "tools/audio/build.py + recipes.json",
+  "clips": [
+    {
+      "id": "cannon-1",
+      "file": "cannon-1.mp3",
+      "seconds": 0.125,
+      "peak": 0.60045,
+      "rms": 0.09853,
+      "bytes": 2238,
+      "sha256": "af967f556b2733353d27b3c236c02f8555e986525a3c4d492083e709b43fa396",
+      "sources": [
+        "fs:506546"
+      ],
+      "loop": false
+    },
+    {
+      "id": "cannon-2",
+      "file": "cannon-2.mp3",
+      "seconds": 0.115,
+      "peak": 0.58985,
+      "rms": 0.08724,
+      "bytes": 2238,
+      "sha256": "bc363a8214d54dfe1fb5cdd84d9a1946f44009667f58ad0ef992becf9c5ae3cf",
+      "sources": [
+        "fs:506545"
+      ],
+      "loop": false
+    },
+    {
+      "id": "double",
+      "file": "double.mp3",
+      "seconds": 0.11,
+      "peak": 0.58826,
+      "rms": 0.09147,
+      "bytes": 2238,
+      "sha256": "223d7e5df0fad56c63848026ed99a69b39fedf1f32d911cbc164b6b078db4bc2",
+      "sources": [
+        "fs:506545",
+        "fs:414888"
+      ],
+      "loop": false
+    },
+    {
+      "id": "shotgun",
+      "file": "shotgun.mp3",
+      "seconds": 0.21,
+      "peak": 0.59948,
+      "rms": 0.07801,
+      "bytes": 3492,
+      "sha256": "21dc2988bd88fb4b0c2e5252875aed39bbd1760615101e45679e92f34dca4165",
+      "sources": [
+        "fs:506546",
+        "fs:506545",
+        "fs:414888"
+      ],
+      "loop": false
+    },
+    {
+      "id": "gatling",
+      "file": "gatling.mp3",
+      "seconds": 0.065,
+      "peak": 0.60388,
+      "rms": 0.10552,
+      "bytes": 1611,
+      "sha256": "90386ed161c580a2c49582f630ade02eeb1adb099f3d989697ba4aefa2e1df5e",
+      "sources": [
+        "fs:506545"
+      ],
+      "loop": false
+    },
+    {
+      "id": "laser",
+      "file": "laser.mp3",
+      "seconds": 0.13,
+      "peak": 0.60137,
+      "rms": 0.25768,
+      "bytes": 2238,
+      "sha256": "cd8857890377ffdd7d5edcb72f29253374d9a761f8acb7921426b060da717410",
+      "sources": [
+        "fs:414888"
+      ],
+      "loop": false
+    },
+    {
+      "id": "homing",
+      "file": "homing.mp3",
+      "seconds": 0.24,
+      "peak": 0.60121,
+      "rms": 0.19488,
+      "bytes": 3805,
+      "sha256": "e993ec04883426715821295157cd4107f53adcf152e7808e5478e9c8ec04d5e9",
+      "sources": [
+        "fs:413057"
+      ],
+      "loop": false
+    },
+    {
+      "id": "remote",
+      "file": "remote.mp3",
+      "seconds": 0.29,
+      "peak": 0.60564,
+      "rms": 0.2138,
+      "bytes": 4432,
+      "sha256": "05ff80a84c87bc01cc45ccdf2697a0f801f6391c015a2a2a03ba5cf9cc8f8a05",
+      "sources": [
+        "fs:413057"
+      ],
+      "loop": false
+    },
+    {
+      "id": "frag",
+      "file": "frag.mp3",
+      "seconds": 0.18,
+      "peak": 0.60196,
+      "rms": 0.06811,
+      "bytes": 2865,
+      "sha256": "e309cd4657cafaeddad930adec55e7915a5004ee5f40f91a2d8f2a509b63abb7",
+      "sources": [
+        "fs:506546",
+        "fs:253168"
+      ],
+      "loop": false
+    },
+    {
+      "id": "mine",
+      "file": "mine.mp3",
+      "seconds": 0.17,
+      "peak": 0.59973,
+      "rms": 0.19737,
+      "bytes": 2865,
+      "sha256": "03ad9d7c5daab9f7f2db820d9f5496595b9b1ce99e6e7bb9052c2def39bd67a1",
+      "sources": [
+        "fs:253168"
+      ],
+      "loop": false
+    },
+    {
+      "id": "deathray",
+      "file": "deathray.mp3",
+      "seconds": 0.46,
+      "peak": 0.59937,
+      "rms": 0.15621,
+      "bytes": 6313,
+      "sha256": "2bd9e73f486d2e14a81f4171985db30a707632618319d46a3632859cdefe921f",
+      "sources": [
+        "fs:413057",
+        "fs:483883"
+      ],
+      "loop": false
+    },
+    {
+      "id": "charge",
+      "file": "charge.mp3",
+      "seconds": 0.56,
+      "peak": 0.61873,
+      "rms": 0.12776,
+      "bytes": 7567,
+      "sha256": "56899c7d98ecea7e1dd165c3240187b8f7290d3cce8425e9d1f4512e942a421c",
+      "sources": [
+        "fs:483883"
+      ],
+      "loop": false
+    },
+    {
+      "id": "shield",
+      "file": "shield.mp3",
+      "seconds": 0.36,
+      "peak": 0.59949,
+      "rms": 0.14131,
+      "bytes": 5059,
+      "sha256": "ba46b24803b469141713c884a6ba8f9f17b5bf1b511a6430647088e70879e4cc",
+      "sources": [
+        "fs:584173"
+      ],
+      "loop": false
+    },
+    {
+      "id": "deflect",
+      "file": "deflect.mp3",
+      "seconds": 0.14,
+      "peak": 0.61755,
+      "rms": 0.13711,
+      "bytes": 2551,
+      "sha256": "9fe233d754f3a3b0d60225ffad2031b909d085aefc2c5d171f74c1e86674ec5a",
+      "sources": [
+        "fs:414888",
+        "fs:392975"
+      ],
+      "loop": false
+    },
+    {
+      "id": "shield-off",
+      "file": "shield-off.mp3",
+      "seconds": 0.25,
+      "peak": 0.59941,
+      "rms": 0.16153,
+      "bytes": 3805,
+      "sha256": "c40798bae414578fc6de5ede9e91890ed435586e368c15615afb3ea0fe449e13",
+      "sources": [
+        "fs:584173"
+      ],
+      "loop": false
+    },
+    {
+      "id": "ricochet-1",
+      "file": "ricochet-1.mp3",
+      "seconds": 0.15,
+      "peak": 0.57312,
+      "rms": 0.12708,
+      "bytes": 2551,
+      "sha256": "6369aed283b0e6e7b2170eb922f248e5a35bd5c4dbaa1f8042a73f9acead5fe7",
+      "sources": [
+        "fs:392975"
+      ],
+      "loop": false
+    },
+    {
+      "id": "ricochet-2",
+      "file": "ricochet-2.mp3",
+      "seconds": 0.16,
+      "peak": 0.59688,
+      "rms": 0.10128,
+      "bytes": 2865,
+      "sha256": "afa29aab2c3b4d244c0e06f6bb2d799441e4858a0db234940117254003a8afc4",
+      "sources": [
+        "fs:392975"
+      ],
+      "loop": false
+    },
+    {
+      "id": "explosion-1",
+      "file": "explosion-1.mp3",
+      "seconds": 0.4,
+      "peak": 0.59196,
+      "rms": 0.15408,
+      "bytes": 5686,
+      "sha256": "3e0fff1ae6cb592c921619fd03a85515a1e661315cfbc991c4b48979f243ae3f",
+      "sources": [
+        "fs:441497"
+      ],
+      "loop": false
+    },
+    {
+      "id": "explosion-2",
+      "file": "explosion-2.mp3",
+      "seconds": 0.36,
+      "peak": 0.59844,
+      "rms": 0.18446,
+      "bytes": 5059,
+      "sha256": "7a202b11537304f5c51e1deca9d13b3c65f4d4adc876a37b38682f385aa29300",
+      "sources": [
+        "fs:459150"
+      ],
+      "loop": false
+    },
+    {
+      "id": "pickup",
+      "file": "pickup.mp3",
+      "seconds": 0.31,
+      "peak": 0.59897,
+      "rms": 0.13825,
+      "bytes": 4432,
+      "sha256": "419d08c18a95611846b77013df7292a149807c1d4b2290ed48dd92d17d150100",
+      "sources": [
+        "fs:220173"
+      ],
+      "loop": false
+    },
+    {
+      "id": "mine-trigger",
+      "file": "mine-trigger.mp3",
+      "seconds": 0.16,
+      "peak": 0.59347,
+      "rms": 0.19387,
+      "bytes": 2865,
+      "sha256": "6128115f9982d8ef01e83e7e4c2ba98bf50d2f2060829f5b96c81f8ece60d242",
+      "sources": [
+        "fs:478191"
+      ],
+      "loop": false
+    },
+    {
+      "id": "ui-click",
+      "file": "ui-click.mp3",
+      "seconds": 0.1,
+      "peak": 0.60702,
+      "rms": 0.23125,
+      "bytes": 1924,
+      "sha256": "6b96d752edc8b69accb6a71f4b8441d81ed8d18ef457377f0bf1f6dedf0249ef",
+      "sources": [
+        "fs:253168"
+      ],
+      "loop": false
+    },
+    {
+      "id": "round-start",
+      "file": "round-start.mp3",
+      "seconds": 0.29,
+      "peak": 0.60015,
+      "rms": 0.21771,
+      "bytes": 4432,
+      "sha256": "6f6b58ad2805d7f9fd45c36a916606d4f2904e0492a76142099a7f9dd4cd7926",
+      "sources": [
+        "fs:657945"
+      ],
+      "loop": false
+    },
+    {
+      "id": "victory",
+      "file": "victory.mp3",
+      "seconds": 0.55,
+      "peak": 0.60004,
+      "rms": 0.20552,
+      "bytes": 7567,
+      "sha256": "53f7c9cca78a8ab60007376c90262837298be371dcd9f1cd969c8092352545b4",
+      "sources": [
+        "fs:368651"
+      ],
+      "loop": false
+    },
+    {
+      "id": "defeat",
+      "file": "defeat.mp3",
+      "seconds": 0.5,
+      "peak": 0.5993,
+      "rms": 0.28899,
+      "bytes": 6940,
+      "sha256": "ebb827238a5aa83a2f59f81b816dd5d2aabe16a11227e59c6c81b61ead6399a4",
+      "sources": [
+        "fs:368651"
+      ],
+      "loop": false
+    },
+    {
+      "id": "tread-loop",
+      "file": "tread-loop.mp3",
+      "seconds": 1.05,
+      "peak": 0.59311,
+      "rms": 0.09752,
+      "bytes": 13523,
+      "sha256": "87711a8288b750b4045335719771a323aa842cea60f459b535feb0031fe01a61",
+      "sources": [
+        "fs:729437"
+      ],
+      "loop": true
+    }
+  ]
+}
